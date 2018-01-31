@@ -1,7 +1,8 @@
 package com.gmail.rgizmalkov.job.api.service;
 
+import com.google.common.base.Optional;
+
 import java.util.List;
-import java.util.Optional;
 
 public interface CacheServiceRs<Rs> {
 
@@ -9,5 +10,5 @@ public interface CacheServiceRs<Rs> {
 
     Optional<Rs> get(int num) throws IndexOutOfBoundsException;
 
-    Optional<List<Rs>> response();
+    List<Optional<Rs>> response();
 }

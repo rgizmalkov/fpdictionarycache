@@ -1,8 +1,11 @@
 package com.gmail.rgizmalkov.job.impl.v1.api.row;
 
 import com.gmail.rgizmalkov.job.api.row.Index;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -13,19 +16,22 @@ import java.util.Objects;
  */
 public class ImmutableIndex implements Index {
     private final String index;
-    private ImmutableMap<Object, String> comparisonMap;
+    private ImmutableMap<Object, List<String>> comparisonMap;
 
     public ImmutableIndex(String index) {
         this.index = index;
     }
 
-    public Index enrich(Map<Object, String> objects) {
+    public Index enrich(Map<Object, List<String>> objects) {
         if (comparisonMap == null && objects != null) {
             this.comparisonMap = ImmutableMap.copyOf(objects);
         }
         return this;
     }
 
+    public Optional<List<String>> find(Object key){
+        return Optional.fromNullable(comparisonMap.get(key));
+    }
 
     @Override
     public String name() {
@@ -33,7 +39,7 @@ public class ImmutableIndex implements Index {
     }
 
     @Override
-    public ImmutableMap<Object, String> comparisonMap() {
+    public ImmutableMap<Object, List<String>> comparisonMap() {
         return this.comparisonMap;
     }
 
