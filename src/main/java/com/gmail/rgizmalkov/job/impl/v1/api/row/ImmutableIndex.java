@@ -1,6 +1,7 @@
 package com.gmail.rgizmalkov.job.impl.v1.api.row;
 
 import com.gmail.rgizmalkov.job.api.row.Index;
+import com.gmail.rgizmalkov.job.impl.v1.api.options.MassiveFilter;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
@@ -33,6 +34,15 @@ public class ImmutableIndex implements Index {
         return Optional.fromNullable(comparisonMap.get(key));
     }
 
+    public Optional<List<String>> like(String pattern) {
+        Map<Object, List<String>> like = MassiveFilter.<Object, List<String>>like(comparisonMap, pattern);
+        List<String> target = new ArrayList<>();
+        for (List<String> uuids : like.values()) {
+            target.addAll(uuids);
+        }
+        return Optional.of(target);
+    }
+
     @Override
     public String name() {
         return index;
@@ -55,4 +65,5 @@ public class ImmutableIndex implements Index {
     public int hashCode() {
         return Objects.hash(index);
     }
+
 }

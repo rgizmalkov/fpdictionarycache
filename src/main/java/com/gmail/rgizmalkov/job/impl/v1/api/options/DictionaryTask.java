@@ -6,23 +6,16 @@ import com.google.common.base.Optional;
 
 import java.util.concurrent.Callable;
 
-public class DictionaryTask<Rq,Rs> implements Callable<Optional<Rs>> {
+public class DictionaryTask<Rq,Rs>{
     private final Rq request;
     private final Function<Rq, Rs> function;
-    private final CacheDictionaryService service;
 
-    public DictionaryTask(Rq request, Function<Rq, Rs> function, CacheDictionaryService service) {
+    public DictionaryTask(Rq request, Function<Rq, Rs> function) {
         this.request = request;
         this.function = function;
-        this.service = service;
     }
 
-    @Override
-    public Optional<Rs> call() throws Exception {
-        return function.apply(request, service);
-    }
-
-    public Optional<Rs> noConcurrentCall(){
+    public Optional<Rs> noConcurrentCall(CacheDictionaryService service){
         return function.apply(request, service);
     }
 }

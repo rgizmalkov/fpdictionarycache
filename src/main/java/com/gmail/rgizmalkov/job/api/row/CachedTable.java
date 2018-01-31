@@ -14,13 +14,13 @@ public interface CachedTable<Type> extends Table<Type> {
     List<Type> content();
 
     /**
-     * Поиск списка объектов эквивалентных значению заданного столбц
+     * Поиск списка объектов эквивалентных значению заданного столбца
      * @param column - название стобца
      * @param object - объект с которым сравнивают
      * @param <O> - тип обхекта с которым сравнивают
      * @return - таблица с сокращенной выборкой
      */
-    <O> LocalCachedTable newTableFrom(String column, O object);
+    <O> LocalCachedTable findNewTableFrom(String column, O object);
 
     /**
      * Поиск списка объектов эквивалентных значению заданного столбца
@@ -30,6 +30,26 @@ public interface CachedTable<Type> extends Table<Type> {
      * @return - список соответсвующих объектов
      */
     <O> List<Type> find(String column, O object);
+
+    /**
+     * Поиск списка объектов подходящих по шаблону значению заданного столбца
+     * @param column - название стобца
+     * @param pattern - объект с которым сравнивают
+     * @param <O> - тип обхекта с которым сравнивают
+     * @return - таблица с сокращенной выборкой
+     */
+    <O> LocalCachedTable likeNewTableFrom(String column, String pattern);
+
+    /**
+     * Поиск списка объектов подходящих по шаблону значению заданного столбца
+     * @param column - название стобца
+     * @param pattern - объект с которым сравнивают
+     * @param <O> - тип обхекта с которым сравнивают
+     * @return - список соответсвующих объектов
+     */
+    <O> List<Type> like(String column, String pattern);
+
+
 
     /**
      * Наполнение таблицы данными

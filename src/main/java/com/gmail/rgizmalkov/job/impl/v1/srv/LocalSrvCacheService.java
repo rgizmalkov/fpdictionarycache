@@ -25,13 +25,12 @@ public class LocalSrvCacheService<Rq, Rs> implements SrvCacheService<Rq, Rs, Loc
     private final static Logger logger = LoggerFactory.getLogger(LocalSrvCacheService.class);
 
     private final FpDictionaryService service;
-    private final CacheDictionaryService cacheDictionaryService;
+    private CacheDictionaryService cacheDictionaryService;
     private ImmutableMap<String, LocalCachedTable> tables;
     private final List<DictionaryTask<Rq, Rs>> tasks = new ArrayList<>();
 
-    public LocalSrvCacheService(FpDictionaryService service, CacheDictionaryService cacheDictionaryService) {
+    public LocalSrvCacheService(FpDictionaryService service) {
         this.service = service;
-        this.cacheDictionaryService = cacheDictionaryService;
     }
 
     @Override
@@ -67,7 +66,7 @@ public class LocalSrvCacheService<Rq, Rs> implements SrvCacheService<Rq, Rs, Loc
     @Override
     public SrvCacheService<Rq, Rs, LocalCachedTable> task(Rq request, Function<Rq, Rs> function) {
         if (request != null && function != null) {
-            this.tasks.add(new DictionaryTask<>(request, function, cacheDictionaryService));
+            this.tasks.add(new DictionaryTask<>(request, function));
         }else {
             logger.warn("Add task operation was ignored. Caused by - request or function is null.");
         }
@@ -111,7 +110,7 @@ public class LocalSrvCacheService<Rq, Rs> implements SrvCacheService<Rq, Rs, Loc
     private List<Optional<Rs>> runTasks() {
         List<Optional<Rs>> responses = new ArrayList<>();
         for (DictionaryTask<Rq, Rs> task : tasks) {
-            responses.add(task.noConcurrentCall());
+            responses.add(task.noConcurrentCall(cacheDictionaryService));
         }
         return responses;
     }
@@ -122,5 +121,6 @@ public class LocalSrvCacheService<Rq, Rs> implements SrvCacheService<Rq, Rs, Loc
             final Optional<List<Object>> all = service.all(localCachedTable.table());
             localCachedTable.loadData(all.or(new ArrayList<>()));
         }
+        this.cacheDictionaryService = new LocalCacheDictionaryService(tables);
     }
 }

@@ -6,6 +6,7 @@ import com.gmail.rgizmalkov.job.api.service.CacheServiceRs;
 import com.gmail.rgizmalkov.job.entity.TestEntity_1;
 import com.gmail.rgizmalkov.job.entity.TestServiceRq_1;
 import com.gmail.rgizmalkov.job.entity.TestServiceRs_1;
+import com.gmail.rgizmalkov.job.impl.v1.api.row.BaseFilter;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.FilterFactory;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.LocalCachedTable;
 import com.gmail.rgizmalkov.job.mock.FpDictionaryService;
@@ -34,7 +35,7 @@ public class LocalSrvCacheServiceTest {
     private final static Logger logger = LoggerFactory.getLogger(LocalSrvCacheServiceTest.class);
 
     @InjectMocks
-    private LocalSrvCacheService<TestServiceRq_1,TestServiceRs_1> service;
+    private LocalSrvCacheService<TestServiceRq_1, TestServiceRs_1> service;
 
     @Mock
     private FpDictionaryService dictionaryService;
@@ -49,7 +50,7 @@ public class LocalSrvCacheServiceTest {
 
 
     @Test
-    public void srvCreateTables_1(){
+    public void srvCreateTables_1() {
         LocalCachedTable<TestEntity_1> table = new LocalCachedTable<>(TestEntity_1.class, Sets.newHashSet("code", "num"));
         service.tables(table);
 
@@ -58,7 +59,7 @@ public class LocalSrvCacheServiceTest {
     }
 
     @Test
-    public void srvFullCall_1(){
+    public void srvFullCall_1() {
         FpDictionaryService dictionaryService = Mockito.mock(FpDictionaryService.class);
 
         TestEntity_1 entity_1 = new TestEntity_1("id_1", "code_1", 1, true);
@@ -76,15 +77,14 @@ public class LocalSrvCacheServiceTest {
 
         LocalCachedTable<TestEntity_1> table = new LocalCachedTable<>(TestEntity_1.class, Sets.newHashSet("code", "num"));
 
-        CacheDictionaryService cacheDictionaryService = new LocalCacheDictionaryService(ImmutableMap.of(table.table().getSimpleName(), table));
-        LocalSrvCacheService<TestServiceRq_1, TestServiceRs_1> service = new LocalSrvCacheService<>(dictionaryService, cacheDictionaryService);
+        LocalSrvCacheService<TestServiceRq_1, TestServiceRs_1> service = new LocalSrvCacheService<>(dictionaryService);
 
         CacheServiceRs<TestServiceRs_1> response = service.tables(table).index(TestEntity_1.class, "id")
                 .task(new TestServiceRq_1(), new Function<TestServiceRq_1, TestServiceRs_1>() {
                     @Override
                     public Optional<TestServiceRs_1> apply(TestServiceRq_1 request, CacheDictionaryService service) {
                         Optional<TestEntity_1> testEntity_1Optional = service.get(
-                                FilterFactory.eq("code", "code_2"),
+                                BaseFilter.like()
                                 TestEntity_1.class
                         );
                         return Optional.of(new TestServiceRs_1());
@@ -101,7 +101,7 @@ public class LocalSrvCacheServiceTest {
             Field field = clazz.getDeclaredField(code);
             ReflectionUtils.makeAccessible(field);
             return ((T) ReflectionUtils.getField(field, object));
-        }catch (Exception ex){
+        } catch (Exception ex) {
             logger.warn("Cannot get field");
             return null;
         }

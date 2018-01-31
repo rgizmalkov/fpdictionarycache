@@ -2,6 +2,7 @@ package com.gmail.rgizmalkov.job.impl.v1.api.row;
 
 import com.gmail.rgizmalkov.job.api.row.CachedTable;
 import com.gmail.rgizmalkov.job.api.row.Index;
+import com.gmail.rgizmalkov.job.impl.v1.api.options.MassiveFilter;
 import com.gmail.rgizmalkov.job.impl.v1.errors.NotDictionaryClassRuntimeException;
 import com.gmail.rgizmalkov.job.mock.Dictionary;
 import com.google.common.base.Function;
@@ -14,6 +15,9 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import static com.gmail.rgizmalkov.job.impl.v1.api.row.LocalCachedTable.SearchMethod.FIND;
+import static com.gmail.rgizmalkov.job.impl.v1.api.row.LocalCachedTable.SearchMethod.LIKE;
+
 public class LocalCachedTable<Type> implements CachedTable<Type> {
     private final static Logger logger = LoggerFactory.getLogger(LocalCachedTable.class);
     private final Class<Type> type;
@@ -21,12 +25,12 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
     private final Set<String> indexes = new HashSet<>();
     private ImmutableMap<String, Type> data;
 
-    private final ImmutableMap<String, Class<?>> tablePredictableRows;
+    private final ImmutableMap<String, Class<?>> tablePredictableColumns;
 
     public LocalCachedTable(Class<Type> type, Set<String> indexes) {
         this.type = type;
         checkTable(type);
-        this.tablePredictableRows = ImmutableMap.copyOf(enrichedFields(type));
+        this.tablePredictableColumns = ImmutableMap.copyOf(enrichedFields(type));
         this.indexes.addAll(indexes);
         init(indexes);
     }
@@ -34,14 +38,13 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
     private LocalCachedTable(
             Class<Type> type,
             ImmutableMap<String, Type> data,
-            ImmutableMap<String, Class<?>> tablePredictableRows,
+            ImmutableMap<String, Class<?>> tablePredictableColumns,
             Map<String, ImmutableIndex> mapping,
             Set<String> indexes
-
     ) {
         this.type = type;
         this.data = data;
-        this.tablePredictableRows = tablePredictableRows;
+        this.tablePredictableColumns = tablePredictableColumns;
         this.mapping.putAll(mapping);
         this.indexes.addAll(indexes);
     }
@@ -83,46 +86,62 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
         return data.values().asList();
     }
 
-    public <O> LocalCachedTable newTableFrom(String key, O object){
-        Map<String, Type> typeMap = p_find(key, object);
+    public <O> LocalCachedTable findNewTableFrom(String key, O object){
+        Map<String, Type> typeMap = search(key, object, FIND);
         return new LocalCachedTable<Type>(
-                this.type, ImmutableMap.copyOf(typeMap), tablePredictableRows, mapping, indexes
+                this.type, ImmutableMap.copyOf(typeMap), tablePredictableColumns, mapping, indexes
         );
     }
 
     public <O> List<Type> find(String key, O object){
-        return Lists.newArrayList(p_find(key, object).values());
+        return Lists.newArrayList(search(key, object, FIND).values());
     }
 
+    public LocalCachedTable likeNewTableFrom(String key, String pattern){
+        Map<String, Type> typeMap = this.<String>search(key, pattern, LIKE);
+        return new LocalCachedTable<Type>(
+                this.type, ImmutableMap.copyOf(typeMap), tablePredictableColumns, mapping, indexes
+        );
+    }
 
-    public <O> Map<String, Type> p_find(String key, O object){
-        if(key != null && tablePredictableRows.containsKey(key) && object.getClass().isAssignableFrom(tablePredictableRows.get(key))){
-            ImmutableIndex immutableIndex = mapping.get(key);
-            final Map<String, Type> types = new HashMap<>();
+    public List<Type> like(String key, String pattern){
+        return Lists.newArrayList(this.<String>search(key, pattern, LIKE).values());
+    }
+
+    private <O> Map<String, Type> search(String column, O object, SearchMethod method){
+        if(column != null && tablePredictableColumns.containsKey(column) && object.getClass().isAssignableFrom(tablePredictableColumns.get(column))){
+            ImmutableIndex immutableIndex = mapping.get(column);
             if (immutableIndex != null) {
-                return immutableIndex.find(object).or(Optional.of(new ArrayList<>())).transform(new Function<List<String>, Map<String, Type>>() {
+                final Map<String, Type> types = new HashMap<>();
+                Function<List<String>, Map<String, Type>> function = new Function<List<String>, Map<String, Type>>() {
                     public Map<String, Type> apply(List<String> input) {
                         for (String uuid : input) {
-                            if(data.containsKey(uuid))
+                            if (data.containsKey(uuid))
                                 types.put(uuid, data.get(uuid));
                         }
                         return types;
                     }
-                }).or(new HashMap<>());
+                };
+                switch (method){
+                    case FIND:
+                        return immutableIndex.find(object).or(Optional.of(new ArrayList<>())).transform(function).or(new HashMap<>());
+                    case LIKE:
+                        return immutableIndex.like(object.toString()).or(Optional.of(new ArrayList<>())).transform(function).or(new HashMap<>());
+                }
+
             }else {
-                for (String key_type : data.keySet()) {
-                    Type type = data.get(key_type);
-                    Object valueFromField = getValueFromField(key, this.type);
-                    if(object.equals(valueFromField)){
-                        types.put(key_type, type);
-                    }
+                switch (method){
+                    case FIND:
+                        return MassiveFilter.eqValueField(data, object, column);
+                    case LIKE:
+                        return MassiveFilter.likeValueField(data, object.toString(), column);
                 }
             }
-            return types;
         }else {
-            logger.warn("Can not find column ["+key+"] in table " + type.getSimpleName());
+            logger.warn("Can not find column ["+column+"] in table " + type.getSimpleName());
             return new HashMap<>();
         }
+        return new HashMap<>();
     }
 
     private Object getValueFromField(String field, Object target) {
@@ -147,8 +166,8 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
 
     @Override
     public CachedTable<Type> addIndex(String index) {
-        Class<?> objectClass = tablePredictableRows.get(index);
-        if(objectClass != null && String.class.isAssignableFrom(objectClass)){
+        Class<?> objectClass = tablePredictableColumns.get(index);
+        if(objectClass != null && (String.class.isAssignableFrom(objectClass) || Number.class.isAssignableFrom(objectClass))){
             mapping.put(index, new ImmutableIndex(index));
             logger.info("Index [" + index + "] successfully added to table " + type.getSimpleName());
         }else {
@@ -159,8 +178,8 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
 
     @Override
     public CachedTable<Type> dropIndex(String index) {
-        Class<?> objectClass = tablePredictableRows.get(index);
-        if(objectClass != null && String.class.isAssignableFrom(objectClass) && mapping.containsKey(index)){
+        Class<?> objectClass = tablePredictableColumns.get(index);
+        if(objectClass != null && (String.class.isAssignableFrom(objectClass) || Number.class.isAssignableFrom(objectClass)) && mapping.containsKey(index)){
             mapping.remove(index);
             logger.info("Index [" + index + "] successfully dropped from table " + type.getSimpleName());
         }else {
@@ -201,4 +220,7 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
         }
     }
 
+    enum SearchMethod{
+        FIND, LIKE
+    }
 }
