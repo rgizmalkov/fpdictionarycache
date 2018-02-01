@@ -3,6 +3,7 @@ package com.gmail.rgizmalkov.job.impl.v1.api.row;
 
 
 import com.gmail.rgizmalkov.job.entity.TestEntity_1;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.testng.annotations.Test;
@@ -80,7 +81,7 @@ public class LocalCachedTableTest {
 
         table.loadData(Lists.<TestEntity_1>newArrayList(entity_1, entity_2, entity_3, entity_4, entity_5, entity_6, entity_7, entity_8, entity_9));
 
-        List<TestEntity_1> testEntity_1s = table.find("id", "id_2");
+        ImmutableMap<String, TestEntity_1> testEntity_1s = table.find("id", "id_2");
         assertEquals(1, testEntity_1s.size());
     }
 

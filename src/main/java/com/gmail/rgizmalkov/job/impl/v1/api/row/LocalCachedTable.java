@@ -93,8 +93,8 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
         );
     }
 
-    public <O> List<Type> find(String key, O object){
-        return Lists.newArrayList(search(key, object, FIND).values());
+    public <O> ImmutableMap<String,Type> find(String key, O object){
+        return ImmutableMap.<String, Type>copyOf(this.<O>search(key, object, FIND));
     }
 
     public LocalCachedTable likeNewTableFrom(String key, String pattern){
@@ -104,9 +104,10 @@ public class LocalCachedTable<Type> implements CachedTable<Type> {
         );
     }
 
-    public List<Type> like(String key, String pattern){
-        return Lists.newArrayList(this.<String>search(key, pattern, LIKE).values());
+    public ImmutableMap<String,Type> like(String key, String pattern){
+        return ImmutableMap.<String, Type>copyOf(this.<String>search(key, pattern, LIKE));
     }
+
 
     private <O> Map<String, Type> search(String column, O object, SearchMethod method){
         if(column != null && tablePredictableColumns.containsKey(column) && object.getClass().isAssignableFrom(tablePredictableColumns.get(column))){

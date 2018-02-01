@@ -37,6 +37,11 @@ public class Filter {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return String.valueOf(chain);
+    }
+
     public Chain<Operation, Action> condition() {
         return this.chain;
     }
@@ -83,6 +88,17 @@ public class Filter {
         public Operation setCondition(Condition condition) {
             this.condition = condition;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            switch (condition){
+                case LIKE:
+                    return key + " LIKE \'" + object + "\'";
+                case EQ:
+                    return key + "=\'" + object + "\'";
+            }
+            return "";
         }
     }
 }

@@ -18,15 +18,24 @@ public class Chain<Link,Transition> {
     private Chain(Link link){
         this.chainLinks = Lists.newArrayList(link);
         this.chainTransition = new ArrayList<>();
-        this.size = 0;
+        this.size = 1;
         this.link_pointer = 0;
         this.transition_pointer = 0;
-
     }
 
     public static <Link,Transition>  Chain<Link,Transition> newArrayChain(Link link){
         Preconditions.checkNotNull(link, "First element of chain can not be null.");
         return new Chain<>(link);
+    }
+
+    @SafeVarargs
+    public static <Link,Transition>  Chain<Link,Transition> newArrayChain(Link initial, Element<Link,Transition> ... elements){
+        Preconditions.checkNotNull(initial, "First element of chain can not be null.");
+        Chain<Link, Transition> chain = new Chain<>(initial);
+        for (Element<Link, Transition> element : elements) {
+            chain.link(element.link, element.transition);
+        }
+        return chain;
     }
 
     /**
@@ -41,7 +50,7 @@ public class Chain<Link,Transition> {
         if(link_pointer == 0 && transition_pointer == 0){
             this.chainLinks.add(chainLink);
             this.chainTransition.add(chainTransition);
-            ++size;
+            size++;
         }
         return this;
     }
@@ -70,7 +79,8 @@ public class Chain<Link,Transition> {
         return chainLinks.size();
     }
 
-    public String view() {
+    @Override
+    public String toString() {
         if(chainTransition.size() > 0) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < chainTransition.size(); i++) {
@@ -82,7 +92,45 @@ public class Chain<Link,Transition> {
         }
     }
 
+    public String toString(String pattern) {
+        if(chainTransition.size() > 0) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < chainTransition.size(); i++) {
+                sb.append(String.format(pattern, chainLinks.get(i))).append(" ").append(chainTransition.get(i)).append(" ");
+            }
+            return sb.append(String.format(pattern, chainLinks.get(chainLinks.size() - 1))).toString();
+        }else {
+            return chainLinks.get(0).toString();
+        }
+    }
 
+    /**
+     * Произвести ряд логических операций сжимая цепь в один объект
+     * @param function - функция сжимающая два элемента  цепи в один
+     * @return - сжатая цепь - один элемент
+     */
+    public Link compress(Function<Link,Transition,Link> function){
+        Link left = this.element();
+        while (this.hasNext()){
+            left = function.apply(left, this.transition(), this.element());
+        }
+        return left;
+    }
+
+    public <Result> Result compress(Aggregation<Result,Link> aggregation, Function<Result,Transition,Result> function){
+        Result left = aggregation.transform(this.element());
+        while (this.hasNext()){
+            left = function.apply(left, this.transition(), aggregation.transform(this.element()));
+        }
+        return left;
+    }
+
+    public interface Aggregation<L,R>{
+        L transform(R source);
+    }
+    public interface Function<L,A,R>{
+        L apply(L left, A action, R right);
+    }
 
     public static class Element<Link,Transition>{
         private Link link;

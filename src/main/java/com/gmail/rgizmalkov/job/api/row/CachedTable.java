@@ -29,7 +29,7 @@ public interface CachedTable<Type> extends Table<Type> {
      * @param <O> - тип обхекта с которым сравнивают
      * @return - список соответсвующих объектов
      */
-    <O> List<Type> find(String column, O object);
+    <O> ImmutableMap<String,Type> find(String column, O object);
 
     /**
      * Поиск списка объектов подходящих по шаблону значению заданного столбца
@@ -47,7 +47,7 @@ public interface CachedTable<Type> extends Table<Type> {
      * @param <O> - тип обхекта с которым сравнивают
      * @return - список соответсвующих объектов
      */
-    <O> List<Type> like(String column, String pattern);
+    <O> ImmutableMap<String,Type> like(String column, String pattern);
 
 
 

@@ -8,11 +8,11 @@ import java.util.List;
 
 public interface CacheDictionaryService {
 
-    <Dictionary> Optional<Dictionary> get(FilterFactory filter, Class<Dictionary> tableClass);
-    <Dictionary> Optional<Dictionary> get(Filter filter, Class<Dictionary> tableClass);
+    <Entity> Optional<Entity> get(FilterFactory filter, Class<Entity> tableClass);
+    <Entity> Optional<Entity> get(Filter filter, Class<Entity> tableClass);
 
-    <Dictionary> Optional<List<Dictionary>> few(FilterFactory filter, Class<Dictionary> tableClass);
-    <Dictionary> Optional<List<Dictionary>> few(Filter filter, Class<Dictionary> tableClass);
+    <Entity> Optional<List<Entity>> few(FilterFactory filter, Class<Entity> tableClass);
+    <Entity> Optional<List<Entity>> few(Filter filter, Class<Entity> tableClass);
 
-    <Dictionary> Optional<List<Dictionary>> all(Class<Dictionary> tableClass);
+    <Entity> Optional<List<Entity>> all(Class<Entity> tableClass);
 }
