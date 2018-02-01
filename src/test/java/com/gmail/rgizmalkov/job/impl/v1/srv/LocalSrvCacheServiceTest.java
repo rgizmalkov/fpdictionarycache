@@ -7,7 +7,6 @@ import com.gmail.rgizmalkov.job.entity.TestEntity_1;
 import com.gmail.rgizmalkov.job.entity.TestServiceRq_1;
 import com.gmail.rgizmalkov.job.entity.TestServiceRs_1;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.BaseFilter;
-import com.gmail.rgizmalkov.job.impl.v1.api.row.FilterFactory;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.LocalCachedTable;
 import com.gmail.rgizmalkov.job.mock.FpDictionaryService;
 import com.google.common.base.Optional;
@@ -84,7 +83,7 @@ public class LocalSrvCacheServiceTest {
                     @Override
                     public Optional<TestServiceRs_1> apply(TestServiceRq_1 request, CacheDictionaryService service) {
                         Optional<TestEntity_1> testEntity_1Optional = service.get(
-                                BaseFilter.like()
+
                                 TestEntity_1.class
                         );
                         return Optional.of(new TestServiceRs_1());

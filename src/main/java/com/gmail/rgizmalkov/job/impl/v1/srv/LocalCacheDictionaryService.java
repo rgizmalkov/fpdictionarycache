@@ -1,8 +1,11 @@
 package com.gmail.rgizmalkov.job.impl.v1.srv;
 
-import com.gmail.rgizmalkov.job.api.row.Filter;
 import com.gmail.rgizmalkov.job.api.service.CacheDictionaryService;
+import com.gmail.rgizmalkov.job.impl.v1.api.options.Chain;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.BaseFilter;
+import com.gmail.rgizmalkov.job.impl.v1.api.row.Filter;
+import com.gmail.rgizmalkov.job.impl.v1.api.row.Filter.Action;
+import com.gmail.rgizmalkov.job.impl.v1.api.row.Filter.Operation;
 import com.gmail.rgizmalkov.job.impl.v1.api.row.LocalCachedTable;
 import com.gmail.rgizmalkov.job.impl.v1.errors.SingleResultExpectedRuntimeException;
 import com.google.common.base.Optional;
@@ -22,7 +25,7 @@ public class LocalCacheDictionaryService implements CacheDictionaryService {
     }
 
     private <Dictionary> List<Dictionary> enrich(Filter filter, Class<Dictionary> tableClass){
-        List<List<BaseFilter.FilterContent>> filterScope = filter.filter();
+        Chain<Operation, Action> condition = filter.condition();
         LocalCachedTable localCachedTable = cache.get(tableClass.getSimpleName());
         if(localCachedTable == null){
             logger.warn("Table [" + tableClass.getSimpleName() + "] does not exist in cache!");
@@ -30,12 +33,40 @@ public class LocalCacheDictionaryService implements CacheDictionaryService {
         }
         logger.info("Request to cache = SELECT * FROM "+tableClass.getSimpleName()+" WHERE " +filter.toString());
         List<Dictionary> target = new ArrayList<>();
+        Operation element = condition.element();
+        while(condition.hasNext()){
+            narrow(element, localCachedTable);
+        }
         for (List<BaseFilter.FilterContent> filterContents : filterScope) {
             target.addAll(narrow(filterContents, localCachedTable));
         }
 
         return target;
     }
+
+    private LocalCachedTable arrow(Operation element, LocalCachedTable localCachedTable){
+        switch (element.getCondition()){
+            case EQ:
+                localCachedTable = localCachedTable.findNewTableFrom(element.getKey(), element.getObject());
+                break;
+            case LIKE:
+                localCachedTable = localCachedTable.likeNewTableFrom(element.getKey(), (String) element.getObject());
+                break;
+        }
+        return localCachedTable;
+    }
+
+    private <Dictionary> List<Dictionary> narrow(Chain<Operation, Action> scope, LocalCachedTable localCachedTable){
+        localCachedTable = arrow(scope.element(), localCachedTable);
+        while(scope.hasNext()) {
+            Action transition = scope.transition();
+            Operation element = scope.element();
+            localCachedTable = arrow(element, localCachedTable);
+        }
+        return localCachedTable.content();
+    }
+
+    private
 
     private <Dictionary> List<Dictionary> narrow(List<BaseFilter.FilterContent> scope, LocalCachedTable localCachedTable){
         for (BaseFilter.FilterContent filterContent : scope) {
